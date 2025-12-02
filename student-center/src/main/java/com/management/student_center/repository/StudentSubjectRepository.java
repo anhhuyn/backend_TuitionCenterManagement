@@ -17,4 +17,6 @@ public interface StudentSubjectRepository extends JpaRepository<StudentSubject, 
     
     List<StudentSubject> findBySubjectId(Long subjectId);
     Optional<StudentSubject> findByStudentIdAndSubjectId(Long studentId, Long subjectId);
+    
+    List<StudentSubject> findBySubject_Id(Long subjectId);
 }

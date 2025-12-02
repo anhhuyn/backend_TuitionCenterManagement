@@ -13,6 +13,8 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface SessionRepository extends JpaRepository<Session, Long> {
+	
+	 List<Session> findBySubject_IdOrderBySessionDateAsc(Long subjectId);
 
     @Query("SELECT s FROM Session s LEFT JOIN FETCH s.room r LEFT JOIN FETCH s.schedule sch " +
            "WHERE s.subject.id = :subjectId " +

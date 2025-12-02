@@ -9,8 +9,17 @@ public class StudentDTO {
     private LocalDate dateOfBirth;
     private String schoolName;
     private String grade;
+    private UserDTO userInfo; // thêm field này
 
-    public StudentDTO() {}
+    public UserDTO getUserInfo() {
+		return userInfo;
+	}
+
+	public void setUserInfo(UserDTO userInfo) {
+		this.userInfo = userInfo;
+	}
+
+	public StudentDTO() {}
 
     public StudentDTO(Long id, String fullName, Boolean gender, LocalDate dateOfBirth, String schoolName, String grade) {
         this.id = id;
@@ -20,6 +29,14 @@ public class StudentDTO {
         this.schoolName = schoolName;
         this.grade = grade;
     }
+    
+    public StudentDTO(Long id, String grade, String schoolName, UserDTO userInfo) {
+        this.id = id;
+        this.grade = grade;
+        this.schoolName = schoolName;
+        this.userInfo = userInfo;
+    }
+
 
     // getter + setter
     public Long getId() { return id; }

@@ -7,6 +7,17 @@ public class UserDTO {
     private String email;
     private Boolean gender;
     private String phoneNumber;
+    private String image; 
+    
+    public UserDTO() {}
+
+    public UserDTO(String fullName, String email, String phoneNumber, Boolean gender, String image) {
+        this.fullName = fullName;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.gender = gender;
+        this.image = image;
+    }
 	public Long getId() {
 		return id;
 	}
@@ -38,7 +49,8 @@ public class UserDTO {
 		this.phoneNumber = phoneNumber;
 	}
 
-    // getters & setters
+	public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
     
     
 }

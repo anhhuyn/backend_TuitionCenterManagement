@@ -4,53 +4,102 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "assignments")
 public class Assignment {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    private String title;
+	private String title;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
-    private LocalDateTime dueDate;
+	private LocalDateTime dueDate;
 
-    private String file;
+	@CreationTimestamp
+	private LocalDateTime createdAt;
 
-    // Quan hệ với Session
-    @ManyToOne
-    @JoinColumn(name = "sessionId", nullable = false)
-    private Session session;
+	private String file;
 
-    // Quan hệ với StudentAssignment
-    @OneToMany(mappedBy = "assignment")
-    private List<StudentAssignment> studentAssignments;
+	// Quan hệ với Session
+	@ManyToOne
+	@JoinColumn(name = "sessionId", nullable = false)
+	private Session session;
 
-    public Assignment() {}
+	// Quan hệ với StudentAssignment
+	@OneToMany(mappedBy = "assignment")
+	private List<StudentAssignment> studentAssignments;
 
-    // Getter & Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+	public Assignment() {
+	}
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+	// Getter & Setter
+	public Long getId() {
+		return id;
+	}
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public LocalDateTime getDueDate() { return dueDate; }
-    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+	public String getTitle() {
+		return title;
+	}
 
-    public String getFile() { return file; }
-    public void setFile(String file) { this.file = file; }
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-    public Session getSession() { return session; }
-    public void setSession(Session session) { this.session = session; }
+	public String getDescription() {
+		return description;
+	}
 
-    public List<StudentAssignment> getStudentAssignments() { return studentAssignments; }
-    public void setStudentAssignments(List<StudentAssignment> studentAssignments) { this.studentAssignments = studentAssignments; }
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public LocalDateTime getDueDate() {
+		return dueDate;
+	}
+
+	public void setDueDate(LocalDateTime dueDate) {
+		this.dueDate = dueDate;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public String getFile() {
+		return file;
+	}
+
+	public void setFile(String file) {
+		this.file = file;
+	}
+
+	public Session getSession() {
+		return session;
+	}
+
+	public void setSession(Session session) {
+		this.session = session;
+	}
+
+	public List<StudentAssignment> getStudentAssignments() {
+		return studentAssignments;
+	}
+
+	public void setStudentAssignments(List<StudentAssignment> studentAssignments) {
+		this.studentAssignments = studentAssignments;
+	}
 }

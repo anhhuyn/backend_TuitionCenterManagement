@@ -44,6 +44,13 @@ public class SecurityConfig {
             .requestMatchers("/v1/api/subject-students/**").permitAll()
             .requestMatchers("/v1/api/students/**").permitAll()
             .requestMatchers("/v1/api/materials/**").permitAll()
+            .requestMatchers("/v1/api/subject/**").permitAll()
+            .requestMatchers("/v1/api/attendance/**").permitAll()
+            .requestMatchers("/v1/api/assignments/**").permitAll()
+            .requestMatchers("/v1/api/assign/**").permitAll()
+            .requestMatchers("/v1/api/by-assignment/**").permitAll()
+            .requestMatchers("/v1/api/assign/update/**").permitAll()
+            .requestMatchers("/v1/api/announcements/**").permitAll()
             .anyRequest().authenticated()
         );
 
