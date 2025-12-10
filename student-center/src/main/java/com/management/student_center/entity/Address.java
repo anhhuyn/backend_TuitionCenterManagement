@@ -1,5 +1,6 @@
 package com.management.student_center.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore; // <--- NHỚ IMPORT CÁI NÀY
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -19,10 +20,12 @@ public class Address {
 
     // Quan hệ với Teacher
     @OneToMany(mappedBy = "addressInfo")
+    @JsonIgnore // <--- THÊM DÒNG NÀY: Ngắt vòng lặp Teacher -> Address -> Teacher...
     private List<Teacher> teachers;
 
     // Quan hệ với Student
     @OneToMany(mappedBy = "addressInfo")
+    @JsonIgnore // <--- THÊM DÒNG NÀY LUÔN: Để tránh lỗi tương tự với học sinh
     private List<Student> students;
 
     // Constructor mặc định

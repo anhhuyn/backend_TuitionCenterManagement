@@ -1,5 +1,6 @@
 package com.management.student_center.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,27 +14,30 @@ public class TeacherPayment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Tiền thì luôn phải là BigDecimal
     private BigDecimal amount;
 
     private LocalDate paymentDate;
 
-    private String status;
+    private String status; // "unpaid", "paid"
 
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    // Quan hệ với Teacher
     @ManyToOne
     @JoinColumn(name = "teacherId")
     private Teacher teacher;
 
-    // Quan hệ với TeacherPaymentDetail
-    @OneToMany(mappedBy = "payment")
+    // FIX LỖI JSON LOOP & CASCADE
+    // @JsonManagedReference: Cho phép Jackson serialize danh sách này
+    // cascade = CascadeType.ALL: Khi lưu Payment, tự động lưu luôn Detail (tiện hơn cho Service)
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference 
     private List<TeacherPaymentDetail> paymentDetails;
 
     public TeacherPayment() {}
 
-    // Getter & Setter
+    // --- Getter & Setter ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

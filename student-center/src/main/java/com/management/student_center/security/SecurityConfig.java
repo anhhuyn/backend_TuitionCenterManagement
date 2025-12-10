@@ -87,6 +87,8 @@ public class SecurityConfig {
             .requestMatchers("/v1/api/payments/**").permitAll()
             
             
+            .requestMatchers("/v1/api/tuitions/**").permitAll()
+            
             .anyRequest().authenticated()
         );
 

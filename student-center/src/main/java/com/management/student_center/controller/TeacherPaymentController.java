@@ -1,5 +1,6 @@
 package com.management.student_center.controller;
 
+import com.management.student_center.dto.payment.PaymentRequest; // <--- Import file mới
 import com.management.student_center.entity.TeacherPayment;
 import com.management.student_center.service.TeacherPaymentService;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,8 @@ public class TeacherPaymentController {
 	/**
 	 * Tạo bảng lương cho cả tháng
 	 */
+	// Trong TeacherPaymentController.java
+
 	@PostMapping("/create")
 	public ResponseEntity<Map<String, Object>> createPayments(@RequestParam int month, @RequestParam int year,
 			@RequestParam(required = false, defaultValue = "") String notes) {
@@ -31,26 +34,35 @@ public class TeacherPaymentController {
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("errCode", 0);
-			response.put("message", "Tạo bảng lương thành công cho " + payments.size() + " giáo viên.");
+			response.put("message", "Tạo bảng lương thành công!");
 			response.put("data", payments);
 
 			return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+		} catch (RuntimeException e) {
+			// Bắt riêng lỗi nghiệp vụ (Ví dụ: Đã tồn tại)
+			if (e.getMessage().contains("đã được tạo trước đó")) {
+				Map<String, Object> response = new HashMap<>();
+				response.put("errCode", 409); // Mã riêng cho trùng lặp
+				response.put("message", e.getMessage());
+				// Trả về 409 Conflict thay vì 400 Bad Request
+				return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+			}
+			// Các lỗi Runtime khác
+			return createErrorResponse(e);
 		} catch (Exception e) {
 			return createErrorResponse(e);
 		}
 	}
 
 	/**
-	 * Thanh toán lương cho 1 giáo viên
+	 * Thanh toán lương cho 1 giáo viên Sử dụng PaymentRequest đã tách file riêng
 	 */
 	@PostMapping("/pay")
-	public ResponseEntity<Map<String, Object>> paySalary(@RequestBody Map<String, Object> payload) {
+	public ResponseEntity<Map<String, Object>> paySalary(@RequestBody PaymentRequest request) {
 		try {
-			Long teacherId = Long.valueOf(payload.get("teacherId").toString());
-			int month = Integer.parseInt(payload.get("month").toString());
-			int year = Integer.parseInt(payload.get("year").toString());
-
-			TeacherPayment result = paymentService.payTeacherSalary(teacherId, month, year);
+			TeacherPayment result = paymentService.payTeacherSalary(request.getTeacherId(), request.getMonth(),
+					request.getYear());
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("errCode", 0);
@@ -63,47 +75,37 @@ public class TeacherPaymentController {
 		}
 	}
 
-	/**
-	 * API Lấy danh sách lương đã lưu trong DB theo tháng GET
-	 * /v1/api/payments/list?month=12&year=2024
-	 */
+	// ... Các API GET (list, detail) giữ nguyên như cũ ...
+
 	@GetMapping("/list")
 	public ResponseEntity<Map<String, Object>> getListByMonth(@RequestParam int month, @RequestParam int year) {
 		try {
 			List<TeacherPayment> list = paymentService.getPaymentsByMonth(month, year);
-
 			Map<String, Object> response = new HashMap<>();
 			response.put("errCode", 0);
 			response.put("message", "Lấy danh sách thành công");
 			response.put("data", list);
-
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
 			return createErrorResponse(e);
 		}
 	}
 
-	/**
-	 * Xem chi tiết lương
-	 */
 	@GetMapping("/detail")
 	public ResponseEntity<Map<String, Object>> getDetail(@RequestParam Long teacherId, @RequestParam int month,
 			@RequestParam int year) {
 		try {
 			TeacherPayment result = paymentService.getTeacherSalaryDetail(teacherId, month, year);
-
 			if (result == null) {
 				Map<String, Object> response = new HashMap<>();
 				response.put("errCode", 1);
 				response.put("message", "Không tìm thấy dữ liệu lương.");
 				return ResponseEntity.ok(response);
 			}
-
 			Map<String, Object> response = new HashMap<>();
 			response.put("errCode", 0);
 			response.put("message", "OK");
 			response.put("data", result);
-
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
 			return createErrorResponse(e);
@@ -111,9 +113,10 @@ public class TeacherPaymentController {
 	}
 
 	private ResponseEntity<Map<String, Object>> createErrorResponse(Exception e) {
+		e.printStackTrace();
 		Map<String, Object> response = new HashMap<>();
-		response.put("errCode", 500); // Hoặc 1 tùy quy ước
+		response.put("errCode", 1);
 		response.put("message", e.getMessage());
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 }

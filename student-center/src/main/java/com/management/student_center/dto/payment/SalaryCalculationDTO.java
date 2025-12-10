@@ -9,10 +9,10 @@ public class SalaryCalculationDTO {
     private String fullName;
     private String email;
     private String phoneNumber;
-    private BigDecimal totalAmount; // Tổng lương
+    private BigDecimal totalAmount; // Đã là BigDecimal (Chuẩn)
     private List<SubjectSalaryDTO> subjects = new ArrayList<>();
 
-    // Getters & Setters
+    // Getters & Setters giữ nguyên, chỉ đảm bảo totalAmount là BigDecimal
     public Long getTeacherId() { return teacherId; }
     public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }
     public String getFullName() { return fullName; }
@@ -29,23 +29,31 @@ public class SalaryCalculationDTO {
     public static class SubjectSalaryDTO {
         private Long subjectId;
         private String subjectName;
-        private Float salaryRate;
+        
+        // SỬA: Float -> BigDecimal
+        private BigDecimal salaryRate; 
+        
         private int totalSessions;
-        private Float totalHours;
-        private Float totalMoney;
+        private Float totalHours; // Giờ giữ Float/Double ok
+        
+        // SỬA: Float -> BigDecimal
+        private BigDecimal totalMoney; 
 
         // Getters & Setters
         public Long getSubjectId() { return subjectId; }
         public void setSubjectId(Long subjectId) { this.subjectId = subjectId; }
         public String getSubjectName() { return subjectName; }
         public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
-        public Float getSalaryRate() { return salaryRate; }
-        public void setSalaryRate(Float salaryRate) { this.salaryRate = salaryRate; }
+        
+        public BigDecimal getSalaryRate() { return salaryRate; }
+        public void setSalaryRate(BigDecimal salaryRate) { this.salaryRate = salaryRate; }
+        
         public int getTotalSessions() { return totalSessions; }
         public void setTotalSessions(int totalSessions) { this.totalSessions = totalSessions; }
         public Float getTotalHours() { return totalHours; }
         public void setTotalHours(Float totalHours) { this.totalHours = totalHours; }
-        public Float getTotalMoney() { return totalMoney; }
-        public void setTotalMoney(Float totalMoney) { this.totalMoney = totalMoney; }
+        
+        public BigDecimal getTotalMoney() { return totalMoney; }
+        public void setTotalMoney(BigDecimal totalMoney) { this.totalMoney = totalMoney; }
     }
 }
