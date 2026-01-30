@@ -1,5 +1,10 @@
 package com.management.student_center.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -28,6 +33,13 @@ public class User {
 
     @Column(name = "roleId")
     private String roleId;
+    
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     @JsonIgnore
     @OneToOne(mappedBy = "userInfo", cascade = CascadeType.ALL)
@@ -85,4 +97,10 @@ public class User {
 
     public Student getStudentInfo() { return studentInfo; }
     public void setStudentInfo(Student studentInfo) { this.studentInfo = studentInfo; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

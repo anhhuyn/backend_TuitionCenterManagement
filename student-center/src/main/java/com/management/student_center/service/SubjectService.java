@@ -1,6 +1,7 @@
 package com.management.student_center.service;
 
 import com.management.student_center.dto.*;
+import com.management.student_center.dto.subject.SubjectStatisticsDTO;
 import com.management.student_center.entity.StudentTuitionDetail;
 import com.management.student_center.entity.Subject;
 import com.management.student_center.repository.SubjectRepository;
@@ -21,6 +22,8 @@ import com.management.student_center.entity.TeacherSubject;
 import java.math.BigDecimal;
 import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -377,6 +380,23 @@ public class SubjectService {
 		}
 
 		return subject;
+	}
+	
+	public SubjectStatisticsDTO getSubjectStatistics () {
+		
+		long totalSubjects = subjectRepository.count();
+		YearMonth currentMonth = YearMonth.now();
+    	LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+    	LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+    	
+    	long newSubjectThisMonth = subjectRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
+    	
+    	double percentageIncreaseSubject = 0;
+    	if ( totalSubjects > 0) {
+    		percentageIncreaseSubject = ((double) newSubjectThisMonth / totalSubjects) * 100;	
+    	}
+    	percentageIncreaseSubject = Math.round(percentageIncreaseSubject * 100.0) / 100.0;
+		return new SubjectStatisticsDTO(totalSubjects, newSubjectThisMonth, percentageIncreaseSubject);
 	}
 
 	// ------------------- MAPPING HELPER -------------------

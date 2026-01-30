@@ -28,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 //Import Java utils
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.Map;
 import java.util.Optional;
 
@@ -307,4 +309,21 @@ public class TeacherService {
 		}
 		return "true".equalsIgnoreCase(genderStr) || "1".equals(genderStr);
 	}
+	
+	 public TeacherStatisticsDTO getTeacherStatistics() {
+	        long totalTeachers = teacherRepository.count();
+
+	        YearMonth currentMonth = YearMonth.now();
+	        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+	        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+	        long newTeachersThisMonth = teacherRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
+
+	        double percentageIncreaseTeacher = 0;
+	        if (totalTeachers > 0) {
+	            percentageIncreaseTeacher = ((double) newTeachersThisMonth / totalTeachers) * 100;
+	        }
+	        percentageIncreaseTeacher = Math.round(percentageIncreaseTeacher * 100.0) / 100.0;
+	        return new TeacherStatisticsDTO(totalTeachers, newTeachersThisMonth, percentageIncreaseTeacher);
+	    }
 }

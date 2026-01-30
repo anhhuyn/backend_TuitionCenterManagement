@@ -3,6 +3,8 @@ package com.management.student_center.controller;
 import com.management.student_center.dto.CreateSubjectRequest;
 import com.management.student_center.dto.SubjectDTO;
 import com.management.student_center.dto.UpdateSubjectRequest;
+import com.management.student_center.dto.student.StudentStatisticDTO;
+import com.management.student_center.dto.subject.SubjectStatisticsDTO;
 import com.management.student_center.entity.Subject;
 import com.management.student_center.service.SubjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,6 +164,11 @@ public class SubjectController {
             response.put("message", e.getMessage());
         }
         return response;
+    }
+    
+    @GetMapping("/subjects/statistics")
+    public SubjectStatisticsDTO getSubjectStatistics() {
+    	return subjectService.getSubjectStatistics();
     }
 
 }

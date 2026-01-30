@@ -112,7 +112,8 @@ public class AuthController {
                 "phoneNumber", user.getPhoneNumber(),
                 "gender", user.getGender(),
                 "image", user.getImage(),
-                "roleId", user.getRoleId()
+                "roleId", user.getRoleId(),
+                "createdAt", user.getCreatedAt()
         ));
 
         return res;

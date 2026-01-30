@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.management.student_center.dto.PaginatedResponseDTO;
 import com.management.student_center.dto.teacher.CreateEmployeeDTO;
 import com.management.student_center.dto.teacher.TeacherDTO;
+import com.management.student_center.dto.teacher.TeacherStatisticsDTO;
 import com.management.student_center.dto.teacher.UpdateEmployeeDTO;
 import com.management.student_center.entity.User;
 
@@ -195,6 +196,11 @@ public class TeacherController {
             // Nếu có lỗi, trả về JSON lỗi
             return createErrorResponse(e);
         }
+    }
+    
+    @GetMapping("/teachers/statistics")
+    public TeacherStatisticsDTO getTeacherStatistics() {
+        return teacherService.getTeacherStatistics();
     }
     
     // === Hàm helper tạo lỗi (giống code cũ của bạn) ===

@@ -19,10 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -349,9 +352,13 @@ public class StudentService {
      */
     public byte[] exportStudentsToExcel(Map<String, String> filters) throws IOException {
         // Lấy list (không phân trang)
+    	Boolean gender = null;
+    	if (filters.get("gender") != null && !filters.get("gender").isBlank()) {
+    	    gender = parseGender(filters.get("gender"));
+    	}
         Specification<Student> spec = Specification.where(StudentSpecification.hasRole("R2"))
                 .and(StudentSpecification.nameContains(filters.get("name")))
-                .and(StudentSpecification.genderIs(parseGender(filters.get("gender"))))
+                .and(StudentSpecification.genderIs(gender))
                 .and(StudentSpecification.gradeContains(filters.get("grade")))
                 .and(StudentSpecification.schoolNameContains(filters.get("schoolName")));
         
@@ -362,7 +369,19 @@ public class StudentService {
 
         // Header
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"STT", "Họ và tên", "Email", "Giới tính", "SĐT", "Khối", "Trường", "Địa chỉ", "Phụ huynh"};
+        String[] headers = {
+        	    "STT",
+        	    "Họ và tên",
+        	    "Email",
+        	    "Giới tính",
+        	    "Ngày sinh",
+        	    "SĐT",
+        	    "Khối",
+        	    "Trường",
+        	    "Địa chỉ",
+        	    "Phụ huynh",
+        	    "SĐT phụ huynh"
+        	};
         
         CellStyle headerStyle = workbook.createCellStyle();
         Font font = workbook.createFont();
@@ -384,16 +403,24 @@ public class StudentService {
         for (int i = 0; i < students.size(); i++) {
             Student s = students.get(i);
             User u = s.getUserInfo();
+            if (u == null) continue; 
             Address a = s.getAddressInfo();
             Row row = sheet.createRow(rowNum++);
 
             row.createCell(0).setCellValue(i + 1);
             row.createCell(1).setCellValue(u.getFullName());
             row.createCell(2).setCellValue(u.getEmail());
-            row.createCell(3).setCellValue(u.getGender() ? "Nam" : "Nữ");
-            row.createCell(4).setCellValue(u.getPhoneNumber());
-            row.createCell(5).setCellValue(s.getGrade());
-            row.createCell(6).setCellValue(s.getSchoolName());
+            row.createCell(3).setCellValue(
+            	    Boolean.TRUE.equals(u.getGender()) ? "Nam" : "Nữ"
+            	);
+            if (s.getDateOfBirth() != null) {
+                row.createCell(4).setCellValue(s.getDateOfBirth().toString());
+            } else {
+                row.createCell(4).setCellValue("");
+            }
+            row.createCell(5).setCellValue(u.getPhoneNumber());
+            row.createCell(6).setCellValue(s.getGrade());
+            row.createCell(7).setCellValue(s.getSchoolName());
 
             String addressStr = "";
             if (a != null) {
@@ -403,12 +430,26 @@ public class StudentService {
                     Optional.ofNullable(a.getProvince()).orElse("")
                 ).replaceAll("^, |^, |, $", ""); // Clean string
             }
-            row.createCell(7).setCellValue(addressStr);
+            row.createCell(8).setCellValue(addressStr);
 
-            String parentStr = s.getParentContacts().stream()
+            String parentNameStr = "";
+            String parentPhoneStr = "";
+
+            if (s.getParentContacts() != null && !s.getParentContacts().isEmpty()) {
+                parentNameStr = s.getParentContacts().stream()
                     .map(ParentContact::getFullName)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.joining(", "));
-            row.createCell(8).setCellValue(parentStr);
+
+                parentPhoneStr = s.getParentContacts().stream()
+                    .map(ParentContact::getPhoneNumber)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining(", "));
+            }
+
+            row.createCell(9).setCellValue(parentNameStr);
+            row.createCell(10).setCellValue(parentPhoneStr);
+
         }
         
         for (int i = 0; i < headers.length; i++) {
@@ -478,5 +519,25 @@ public class StudentService {
     private Boolean parseGender(String genderStr) {
         if (genderStr == null || genderStr.isEmpty()) return null;
         return "true".equalsIgnoreCase(genderStr) || "1".equals(genderStr);
+    }
+    
+    public StudentStatisticDTO getStudentStatistics() {
+    	
+    	long totalStudents = studentRepository.count();
+    	
+    	YearMonth currentMonth = YearMonth.now();
+    	LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+    	LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+    	
+    	long newStudentsThisMonth = studentRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
+    	
+    	double percentageIncrease = 0;
+    	if (totalStudents >0) {
+    		percentageIncrease = ((double) newStudentsThisMonth / totalStudents) * 100;
+    	}
+    	
+    	percentageIncrease = Math.round(percentageIncrease * 100.0) / 100.0;
+    	
+    	return new StudentStatisticDTO(totalStudents, newStudentsThisMonth, percentageIncrease);
     }
 }
