@@ -1,11 +1,14 @@
 package com.management.student_center.controller;
 
+import com.management.student_center.dto.ChangePasswordRequest;
 import com.management.student_center.dto.OtpRequest;
 import com.management.student_center.dto.ResetPasswordRequest;
 import com.management.student_center.dto.VerifyOtpRequest;
+import com.management.student_center.entity.User;
 import com.management.student_center.service.OtpService;
 import jakarta.mail.MessagingException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -48,4 +51,26 @@ public class ForgotPasswordController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+        @AuthenticationPrincipal User user,
+        @RequestBody ChangePasswordRequest request
+    ) {
+        try {
+            otpService.changePassword(
+                user.getId(),
+                request.currentPassword(),
+                request.newPassword()
+            );
+            return ResponseEntity.ok(
+                Map.of("message", "Đổi mật khẩu thành công")
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                Map.of("message", e.getMessage())
+            );
+        }
+    }
+
 }

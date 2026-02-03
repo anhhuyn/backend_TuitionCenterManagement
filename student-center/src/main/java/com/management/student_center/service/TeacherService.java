@@ -113,6 +113,7 @@ public class TeacherService {
 		newUser.setGender(dto.getGender());
 		newUser.setImage(imagePath);
 		newUser.setRoleId(dto.getRoleId());
+		newUser.setPasswordUpdatedAt(LocalDateTime.now());
 		User savedUser = userRepository.save(newUser);
 
 		if ("R1".equals(dto.getRoleId())) {

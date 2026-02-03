@@ -113,7 +113,8 @@ public class AuthController {
                 "gender", user.getGender(),
                 "image", user.getImage(),
                 "roleId", user.getRoleId(),
-                "createdAt", user.getCreatedAt()
+                "createdAt", user.getCreatedAt(),
+                "passwordUpdatedAt", user.getPasswordUpdatedAt()
         ));
 
         return res;

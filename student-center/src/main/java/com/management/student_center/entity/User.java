@@ -40,6 +40,9 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+    
+    @Column(name = "password_updated_at")
+    private LocalDateTime passwordUpdatedAt;
 
     @JsonIgnore
     @OneToOne(mappedBy = "userInfo", cascade = CascadeType.ALL)
@@ -103,4 +106,13 @@ public class User {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public LocalDateTime getPasswordUpdatedAt() {
+        return passwordUpdatedAt;
+    }
+
+    public void setPasswordUpdatedAt(LocalDateTime passwordUpdatedAt) {
+        this.passwordUpdatedAt = passwordUpdatedAt;
+    }
+
 }

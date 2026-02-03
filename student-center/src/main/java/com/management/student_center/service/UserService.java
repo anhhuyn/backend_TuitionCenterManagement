@@ -36,7 +36,7 @@ public class UserService {
         user.setFullName(dto.fullName());
         user.setPhoneNumber(dto.phoneNumber());
         user.setGender(dto.gender());
-        user.setRoleId(dto.roleId());
+        
 
         Map<String, Object> result = new HashMap<>();
 

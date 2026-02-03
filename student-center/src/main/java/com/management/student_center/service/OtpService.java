@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Random;
@@ -101,4 +102,23 @@ public class OtpService {
         public String getOtp() { return otp; }
         public long getExpiry() { return expiry; }
     }
+    
+    public void changePassword(
+    	    Long userId,
+    	    String currentPassword,
+    	    String newPassword
+    	) throws Exception {
+
+    	    User user = userRepository.findById(userId)
+    	        .orElseThrow(() -> new Exception("User không tồn tại"));
+
+    	    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+    	        throw new Exception("Mật khẩu hiện tại không đúng");
+    	    }
+
+    	    user.setPassword(passwordEncoder.encode(newPassword));
+    	    user.setPasswordUpdatedAt(LocalDateTime.now());
+
+    	    userRepository.save(user);
+    	}
 }
