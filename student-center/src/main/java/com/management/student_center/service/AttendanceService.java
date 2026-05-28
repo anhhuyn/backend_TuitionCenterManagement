@@ -5,20 +5,13 @@ import com.management.student_center.dto.AttendanceStudentDTO;
 import com.management.student_center.dto.TodayAttendanceDTO;
 import com.management.student_center.entity.*;
 import com.management.student_center.repository.*;
-import lombok.RequiredArgsConstructor;
+import com.management.student_center.enums.ActivityActionType;
+import com.management.student_center.enums.ActivityTargetType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,17 +21,23 @@ public class AttendanceService {
     private final StudentSubjectRepository studentSubjectRepository;
     private final AttendanceStudentRepository attendanceStudentRepository;
     private final StudentRepository studentRepository;
-    
+    private final ActivityLogService activityLogService;
+    private final CurrentUserService currentUserService;
+
     public AttendanceService(
             SessionRepository sessionRepository,
             StudentSubjectRepository studentSubjectRepository,
             AttendanceStudentRepository attendanceStudentRepository,
-            StudentRepository studentRepository
+            StudentRepository studentRepository,
+            ActivityLogService activityLogService,
+            CurrentUserService currentUserService
     ) {
         this.sessionRepository = sessionRepository;
         this.studentSubjectRepository = studentSubjectRepository;
         this.attendanceStudentRepository = attendanceStudentRepository;
         this.studentRepository = studentRepository;
+        this.activityLogService = activityLogService;
+        this.currentUserService = currentUserService;
     }
     
     public List<AttendanceStudentDTO> getAbsentOrLateStudentsInDateRange(LocalDate startDate, LocalDate endDate) {
@@ -60,54 +59,6 @@ public class AttendanceService {
                 ))
                 .collect(Collectors.toList());
     }
-    
-
-    // Lấy danh sách điểm danh
-    /*public AttendanceResponseDTO getAttendanceBySubject(Long subjectId) {
-
-        List<Session> sessions = sessionRepository.findBySubject_IdOrderBySessionDateAsc(subjectId);
-
-        List<StudentSubject> studentSubjects = studentSubjectRepository.findBySubject_Id(subjectId);
-
-        AttendanceResponseDTO response = new AttendanceResponseDTO();
-
-        // map sessions
-        var sessionDTOs = sessions.stream()
-                .map(s -> new AttendanceResponseDTO.SessionDTO(
-                        s.getId(),
-                        s.getSessionDate(),
-                        s.getStartTime(),
-                        s.getEndTime()))
-                .toList();
-
-        // map students + attendances
-        var students = studentSubjects.stream().map(ss -> {
-            Student student = ss.getStudent();
-
-            List<AttendanceStudent> attendances =
-                    attendanceStudentRepository.findAllByStudentAndSessionIn(student, sessions);
-
-            var attendanceItems = attendances.stream()
-                    .map(a -> new AttendanceResponseDTO.AttendanceItem(
-                            a.getSession().getId(),
-                            a.getStatus(),
-                            a.getNote()
-                    ))
-                    .toList();
-
-            return new AttendanceResponseDTO.StudentAttendanceDTO(
-                    student.getId(),
-                    student.getUserInfo().getFullName(),
-                    attendanceItems
-            );
-        }).toList();
-        
-        response.setSubjectId(subjectId);
-        response.setSessions(sessionDTOs);
-        response.setStudents(students);
-
-        return response;
-    }*/
     
     public AttendanceResponseDTO getAttendanceBySubject(Long subjectId) {
         // 1. Lấy tất cả sessions
@@ -297,11 +248,16 @@ public class AttendanceService {
             throw new IllegalStateException("Không thể điểm danh cho buổi học đã bị hủy");
         }
         
+        // Lấy user hiện tại đang thực hiện hành động
+        User currentUser = currentUserService.getCurrentUser();
+        
+        String oldStatus = null;
         AttendanceStudent existing = attendanceStudentRepository
                 .findBySessionAndStudent(session, student)
                 .orElse(null);
         
         if (existing != null) {
+            oldStatus = existing.getStatus();
             existing.setStatus(status);
             attendanceStudentRepository.save(existing);
         } else {
@@ -313,6 +269,16 @@ public class AttendanceService {
         }
         
         updateSessionStatusBasedOnAttendance(session);
+        
+        // Ghi log điểm danh
+        logAttendanceAction(
+            currentUser,
+            existing != null ? ActivityActionType.UPDATE : ActivityActionType.CREATE,
+            student,
+            session,
+            status,
+            oldStatus
+        );
         
         return existing != null ? 
             "Cập nhật trạng thái điểm danh thành công" : 
@@ -336,32 +302,45 @@ public class AttendanceService {
     }
 
     // cập nhật ghi chú
+    @Transactional
     public String updateNote(Long studentId, Long sessionId, String note) {
-    	  List<Student> allStudents = studentRepository.findAll();
-
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
-
+        
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
-
+        
+        // Lấy user hiện tại đang thực hiện hành động
+        User currentUser = currentUserService.getCurrentUser();
+        
         AttendanceStudent existing = attendanceStudentRepository
                 .findBySessionAndStudent(session, student)
                 .orElse(null);
-
+        
+        String oldNote = null;
         if (existing != null) {
+            oldNote = existing.getNote();
             existing.setNote(note);
             attendanceStudentRepository.save(existing);
-            return "Cập nhật ghi chú thành công";
+        } else {
+            AttendanceStudent newAttendance = new AttendanceStudent();
+            newAttendance.setStudent(student);
+            newAttendance.setSession(session);
+            newAttendance.setNote(note);
+            attendanceStudentRepository.save(newAttendance);
         }
-
-        AttendanceStudent newAttendance = new AttendanceStudent();
-        newAttendance.setStudent(student);
-        newAttendance.setSession(session);
-        newAttendance.setNote(note);
-        attendanceStudentRepository.save(newAttendance);
-
-        return "Thêm mới ghi chú thành công";
+        
+        // Ghi log cập nhật ghi chú
+        logNoteAction(
+            currentUser,
+            existing != null ? ActivityActionType.UPDATE : ActivityActionType.CREATE,
+            student,
+            session,
+            note,
+            oldNote
+        );
+        
+        return existing != null ? "Cập nhật ghi chú thành công" : "Thêm mới ghi chú thành công";
     }
     
     @Transactional(readOnly = true)
@@ -411,5 +390,127 @@ public class AttendanceService {
         dto.setLateStudents(late);
 
         return dto;
+    }
+    
+    // =========================
+    // LOGGING METHODS
+    // =========================
+    
+    private void logAttendanceAction(
+            User user,
+            ActivityActionType actionType,
+            Student student,
+            Session session,
+            String newStatus,
+            String oldStatus
+    ) {
+        String statusText = getStatusVietnamese(newStatus);
+        String actionText = actionType == ActivityActionType.CREATE ? "đã điểm danh" : "đã cập nhật điểm danh";
+        
+        String description = String.format(
+            "%s học sinh %s với trạng thái: %s",
+            actionText,
+            student.getUserInfo().getFullName(),
+            statusText
+        );
+        
+        String meta = String.format(
+            """
+            {
+                "student_id": %d,
+                "student_name": "%s",
+                "session_id": %d,
+                "session_date": "%s",
+                "subject": "%s",
+                "new_status": "%s",
+                "old_status": %s,
+                "status_text": "%s"
+            }
+            """,
+            student.getId(),
+            student.getUserInfo().getFullName(),
+            session.getId(),
+            session.getSessionDate().toString(),
+            session.getSubject() != null ? session.getSubject().getName() : "Unknown",
+            newStatus,
+            oldStatus != null ? "\"" + oldStatus + "\"" : "null",
+            statusText
+        );
+        
+        activityLogService.log(
+            user,
+            actionType,
+            ActivityTargetType.STUDENT,
+            student.getId(),
+            description,
+            meta
+        );
+    }
+    
+    private void logNoteAction(
+            User user,
+            ActivityActionType actionType,
+            Student student,
+            Session session,
+            String newNote,
+            String oldNote
+    ) {
+        String actionText = actionType == ActivityActionType.CREATE ? "đã thêm ghi chú" : "đã cập nhật ghi chú";
+        
+        String description = String.format(
+            "%s cho học sinh %s: %s",
+            actionText,
+            student.getUserInfo().getFullName(),
+            newNote != null && newNote.length() > 50 ? newNote.substring(0, 50) + "..." : newNote
+        );
+        
+        String meta = String.format(
+            """
+            {
+                "student_id": %d,
+                "student_name": "%s",
+                "session_id": %d,
+                "session_date": "%s",
+                "subject": "%s",
+                "new_note": "%s",
+                "old_note": %s
+            }
+            """,
+            student.getId(),
+            student.getUserInfo().getFullName(),
+            session.getId(),
+            session.getSessionDate().toString(),
+            session.getSubject() != null ? session.getSubject().getName() : "Unknown",
+            newNote != null ? escapeJson(newNote) : "",
+            oldNote != null ? "\"" + escapeJson(oldNote) + "\"" : "null"
+        );
+        
+        activityLogService.log(
+            user,
+            actionType,
+            ActivityTargetType.STUDENT,
+            student.getId(),
+            description,
+            meta
+        );
+    }
+    
+    private String getStatusVietnamese(String status) {
+        switch (status) {
+            case "present": return "có mặt";
+            case "late": return "đi muộn";
+            case "absent": return "vắng mặt";
+            case "pending": return "chưa điểm danh";
+            default: return status;
+        }
+    }
+    
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
     }
 }

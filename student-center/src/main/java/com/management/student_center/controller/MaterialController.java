@@ -28,12 +28,14 @@ public class MaterialController {
         try {
             List<MaterialDTO> materials = materialService.getMaterialsBySubjectId(subjectId);
             Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
             res.put("message", "Lấy danh sách tài liệu thành công");
             res.put("data", materials);
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();
-            error.put("message", "Lỗi server");
+            error.put("success", false);
+            error.put("message", "Lỗi server: " + e.getMessage());
             error.put("data", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
@@ -47,31 +49,35 @@ public class MaterialController {
         try {
             Material material = materialService.createMaterial(title, subjectId, userId, file);
             Map<String, Object> res = new HashMap<>();
-            res.put("message", "Tải lên thành công");
+            res.put("success", true);
+            res.put("message", "Tải lên tài liệu thành công");
             MaterialDTO dto = materialService.convertToDTO(material);
             res.put("data", dto);
             return ResponseEntity.ok(res);
         } catch (IOException | IllegalArgumentException e) {
             Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
             error.put("message", e.getMessage());
             error.put("data", null);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
 
-    @PutMapping("/materials/{materialId}/file")
-    public ResponseEntity<?> updateMaterialFile(@PathVariable Long materialId,
-                                                @RequestParam(value="file", required=false) MultipartFile file,
-                                                @RequestParam(value="title", required=false) String title) {
+    @PutMapping("/materials/{materialId}")
+    public ResponseEntity<?> updateMaterial(@PathVariable Long materialId,
+                                            @RequestParam(value = "file", required = false) MultipartFile file,
+                                            @RequestParam(value = "title", required = false) String title) {
         try {
             Material material = materialService.updateMaterialFile(materialId, file, title);
             Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
             res.put("message", "Cập nhật tài liệu thành công");
             MaterialDTO dto = materialService.convertToDTO(material);
             res.put("data", dto);
             return ResponseEntity.ok(res);
         } catch (IOException | IllegalArgumentException e) {
             Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
             error.put("message", e.getMessage());
             error.put("data", null);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -83,11 +89,13 @@ public class MaterialController {
         try {
             materialService.deleteMaterial(materialId);
             Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
             res.put("message", "Xóa tài liệu thành công");
             res.put("data", null);
             return ResponseEntity.ok(res);
         } catch (IOException | IllegalArgumentException e) {
             Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
             error.put("message", e.getMessage());
             error.put("data", null);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);

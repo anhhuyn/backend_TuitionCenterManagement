@@ -7,6 +7,7 @@ import com.management.student_center.dto.leave.PreviewAffectedSessionResponseDTO
 import com.management.student_center.dto.leave.PreviewReplacementPlanRequestDTO;
 import com.management.student_center.dto.leave.ReplacementTeacherResponseDTO;
 import com.management.student_center.dto.leave.TeacherLeaveApproveDTO;
+import com.management.student_center.dto.leave.TeacherLeaveFilterRequestDTO;
 import com.management.student_center.dto.leave.TeacherLeaveRequestDTO;
 import com.management.student_center.dto.leave.TeacherLeaveResponseDTO;
 import com.management.student_center.dto.teacher.TeacherAbsentResponse;
@@ -98,12 +99,20 @@ public class TeacherLeaveController {
 	// =========================================================
 
 	@GetMapping
-	public ResponseEntity<Map<String, Object>> getLeaveRequests(@RequestParam(defaultValue = "1") int page,
-			@RequestParam(defaultValue = "10") int size,
-			@RequestParam(required = false) TeacherLeave.LeaveStatus status) {
+	public ResponseEntity<Map<String, Object>> getLeaveRequests(@ModelAttribute TeacherLeaveFilterRequestDTO filter) {
 		try {
+			// Validate page/size trong filter
+			if (filter.getPage() == null || filter.getPage() < 1) {
+				filter.setPage(1);
+			}
+			if (filter.getSize() == null || filter.getSize() < 1) {
+				filter.setSize(10);
+			}
+			if (filter.getSize() > 100) { // Giới hạn để tránh abuse
+				filter.setSize(100);
+			}
 			Page<TeacherLeaveResponseDTO> leavePage = leaveService.getLeaveRequests(getCurrentUserId(),
-					getCurrentUserRole(), page, size, status);
+					getCurrentUserRole(), filter);
 
 			Map<String, Object> pagination = new HashMap<>();
 			pagination.put("currentPage", leavePage.getNumber() + 1);
@@ -310,16 +319,26 @@ public class TeacherLeaveController {
 			return errorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
-	
+
 	@GetMapping("/absent-this-week")
-    public WeeklyAbsentTeacherResponse getAbsentTeachersThisWeek() {
+	public WeeklyAbsentTeacherResponse getAbsentTeachersThisWeek() {
 
-        List<TeacherAbsentResponse> teachers =
-                leaveService.getAbsentTeachersThisWeek();
+		List<TeacherAbsentResponse> teachers = leaveService.getAbsentTeachersThisWeek();
 
-        return new WeeklyAbsentTeacherResponse(
-                teachers.size(),
-                teachers
-        );
-    }
+		return new WeeklyAbsentTeacherResponse(teachers.size(), teachers);
+	}
+
+	// =========================================================
+	// LẤY DANH SÁCH SESSION ĐƯỢC ASSIGN DẠY THAY
+	// =========================================================
+
+	@GetMapping("/replacement-sessions")
+	public ResponseEntity<Map<String, Object>> getReplacementSessions() {
+		try {
+			List<LeaveAffectedSessionDTO> sessions = leaveService.getReplacementSessions(getCurrentUserId());
+			return successResponse("OK", sessions, HttpStatus.OK);
+		} catch (Exception e) {
+			return errorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
+		}
+	}
 }

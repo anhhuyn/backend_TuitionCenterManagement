@@ -44,4 +44,7 @@ public interface StudentSubjectRepository extends JpaRepository<StudentSubject, 
     
     // Optional: Lấy tất cả học sinh chưa bị xóa (không cần check thời gian)
     List<StudentSubject> findBySubject_IdAndDeletedAtIsNull(Long subjectId);
+    
+    @Query("SELECT COUNT(ss) FROM StudentSubject ss WHERE ss.subject.id = :subjectId AND ss.deletedAt IS NULL")
+    long countActiveBySubjectId(@Param("subjectId") Long subjectId);
 }

@@ -9,6 +9,7 @@ import com.management.student_center.dto.leave.PreviewReplacementPlanRequestDTO;
 import com.management.student_center.dto.leave.PreviewReplacementSelectionDTO;
 import com.management.student_center.dto.leave.ReplacementTeacherResponseDTO;
 import com.management.student_center.dto.leave.TeacherLeaveApproveDTO;
+import com.management.student_center.dto.leave.TeacherLeaveFilterRequestDTO;
 import com.management.student_center.dto.leave.TeacherLeaveRequestDTO;
 import com.management.student_center.dto.leave.TeacherLeaveResponseDTO;
 import com.management.student_center.dto.teacher.TeacherAbsentResponse;
@@ -92,26 +93,25 @@ public class TeacherLeaveService {
 	// GET LIST
 	// =========================================================
 
-	public Page<TeacherLeaveResponseDTO> getLeaveRequests(Long userId, String role, int page, int size,
-			TeacherLeave.LeaveStatus statusFilter) {
-		Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-		Page<TeacherLeave> leavePage;
-		if ("ADMIN".equalsIgnoreCase(role)) {
-			if (statusFilter != null) {
-				leavePage = leaveRepository.findByStatus(statusFilter, pageable);
-			} else {
-				leavePage = leaveRepository.findAll(pageable);
-			}
-		} else {
+	public Page<TeacherLeaveResponseDTO> getLeaveRequests(Long userId, String role,
+			TeacherLeaveFilterRequestDTO filter) {
+		Pageable pageable = PageRequest.of(filter.getPage() - 1, filter.getSize(),
+				Sort.by(Sort.Direction.DESC, "createdAt"));
 
+		Page<TeacherLeave> leavePage;
+
+		if ("ADMIN".equalsIgnoreCase(role)) {
+			// ✅ Lọc theo cả status và date range
+			leavePage = leaveRepository.findByFilters(filter.getStatus(), filter.getStartDate(), filter.getEndDate(),
+					pageable);
+		} else {
 			Teacher teacher = teacherRepository.findByUserInfoId(userId)
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
-			if (statusFilter != null) {
-				leavePage = leaveRepository.findByTeacherIdAndStatus(teacher.getId(), statusFilter, pageable);
-			} else {
-				leavePage = leaveRepository.findByTeacherId(teacher.getId(), pageable);
-			}
+
+			leavePage = leaveRepository.findByTeacherIdAndFilters(teacher.getId(), filter.getStatus(),
+					filter.getStartDate(), filter.getEndDate(), pageable);
 		}
+
 		return leavePage.map(this::mapToResponseDTO);
 	}
 
@@ -701,4 +701,44 @@ public class TeacherLeaveService {
 	public long countAbsentTeachersThisWeek() {
 		return getAbsentTeachersThisWeek().size();
 	}
+
+	// =========================================================
+	// GET REPLACEMENT SESSIONS FOR TEACHER
+	// =========================================================
+
+	public List<LeaveAffectedSessionDTO> getReplacementSessions(Long teacherUserId) {
+		Teacher teacher = teacherRepository.findByUserInfoId(teacherUserId)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
+		List<LeaveAffectedSession> list = affectedSessionRepository
+				.findByReplacementTeacherId(teacher.getId().intValue());
+		return list.stream().map(las -> {
+			LeaveAffectedSessionDTO dto = new LeaveAffectedSessionDTO();
+			dto.setId(las.getId());
+			dto.setLeaveId(las.getLeave().getId());
+			dto.setSessionId(las.getSession().getId());
+			dto.setSessionDate(las.getSession().getSessionDate().toString());
+			dto.setStatus(las.getStatus().name());
+			if (las.getReplacementResponse() != null) {
+				dto.setReplacementResponse(las.getReplacementResponse().name());
+			}
+			dto.setOriginalTeacherId(las.getOriginalTeacherId().longValue());
+			dto.setReplacementTeacherId(las.getReplacementTeacherId().longValue());
+			// teacher nghỉ
+			teacherRepository.findById(las.getOriginalTeacherId().longValue())
+					.ifPresent(t -> dto.setOriginalTeacherName(t.getUserInfo().getFullName()));
+			// teacher dạy thay
+			teacherRepository.findById(las.getReplacementTeacherId().longValue())
+					.ifPresent(t -> dto.setReplacementTeacherName(t.getUserInfo().getFullName()));
+			// thêm info session
+			dto.setClassName(las.getSession().getClass().getName());
+			dto.setSubjectName(las.getSession().getSubject().getName());
+			if (las.getSession().getRoom() != null) {
+				dto.setRoomName(las.getSession().getRoom().getName());
+			}
+			dto.setStartTime(las.getSession().getStartTime());
+			dto.setEndTime(las.getSession().getEndTime());
+			return dto;
+		}).toList();
+	}
+
 }

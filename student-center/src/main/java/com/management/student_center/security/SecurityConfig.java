@@ -64,7 +64,9 @@ public class SecurityConfig {
             .requestMatchers("/v1/api/announcements/**").permitAll()
             .requestMatchers("/v1/api/attendance/**").permitAll()
             .requestMatchers("/v1/api/teacher-leaves/**").permitAll()
-           
+            .requestMatchers("/api/auth/**", "/login", "/public/**").permitAll()
+            
+            
             .requestMatchers(HttpMethod.GET, "/v1/api/teachers").permitAll()
             .requestMatchers(HttpMethod.POST, "/v1/api/teachers").permitAll()
             .requestMatchers(HttpMethod.PUT, "/v1/api/teachers/**").permitAll()

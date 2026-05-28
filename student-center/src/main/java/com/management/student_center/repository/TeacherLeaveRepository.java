@@ -96,4 +96,29 @@ public interface TeacherLeaveRepository
 			    AND tl.endDate >= :weekStart
 			""")
 	List<TeacherLeave> findApprovedLeavesInWeek(LocalDate weekStart, LocalDate weekEnd);
+
+	// ✅ Method 1: Filter cho ADMIN
+	@Query("SELECT DISTINCT tl FROM TeacherLeave tl " + "LEFT JOIN FETCH tl.teacher t " + "LEFT JOIN FETCH t.userInfo "
+			+ "WHERE " + "(:status IS NULL OR tl.status = :status) "
+			+ "AND (:startDate IS NULL OR tl.endDate >= :startDate) " + // Đơn kết thúc SAU ngày bắt đầu
+			"AND (:endDate IS NULL OR tl.startDate <= :endDate)") // Đơn bắt đầu TRƯỚC ngày kết thúc
+	Page<TeacherLeave> findByFilters(@Param("status") TeacherLeave.LeaveStatus status,
+			@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
+
+	// ✅ Method 2: Filter cho TEACHER (có teacherId)
+	@Query("SELECT DISTINCT tl FROM TeacherLeave tl " + "LEFT JOIN FETCH tl.teacher t " + "LEFT JOIN FETCH t.userInfo "
+			+ "WHERE " + "tl.teacher.id = :teacherId " + "AND (:status IS NULL OR tl.status = :status) "
+			+ "AND (:startDate IS NULL OR tl.endDate >= :startDate) "
+			+ "AND (:endDate IS NULL OR tl.startDate <= :endDate)")
+	Page<TeacherLeave> findByTeacherIdAndFilters(@Param("teacherId") Long teacherId,
+			@Param("status") TeacherLeave.LeaveStatus status, @Param("startDate") LocalDate startDate,
+			@Param("endDate") LocalDate endDate, Pageable pageable);
+
+	// ✅ Method 3: Count query cho pagination (nếu cần performance)
+	@Query("SELECT COUNT(tl) FROM TeacherLeave tl WHERE " + "(:status IS NULL OR tl.status = :status) "
+			+ "AND (:startDate IS NULL OR tl.endDate >= :startDate) "
+			+ "AND (:endDate IS NULL OR tl.startDate <= :endDate)")
+	long countByFilters(@Param("status") TeacherLeave.LeaveStatus status, @Param("startDate") LocalDate startDate,
+			@Param("endDate") LocalDate endDate);
+
 }

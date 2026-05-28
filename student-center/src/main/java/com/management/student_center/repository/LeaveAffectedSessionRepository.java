@@ -74,4 +74,7 @@ public interface LeaveAffectedSessionRepository extends JpaRepository<LeaveAffec
 			""")
 	boolean existsReplacementConflict(@Param("teacherId") Integer teacherId, @Param("date") LocalDate date,
 			@Param("startTime") LocalTime startTime, @Param("endTime") LocalTime endTime);
+	
+	
 }
+

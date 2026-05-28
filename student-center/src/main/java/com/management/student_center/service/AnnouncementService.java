@@ -15,7 +15,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.management.student_center.service.ActivityLogService;
 
+import com.management.student_center.enums.ActivityActionType;
+
+import com.management.student_center.enums.ActivityTargetType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -29,20 +33,33 @@ public class AnnouncementService {
 	private final UserRepository userRepo;
 	private final AnnouncementLikeRepository likeRepo;
 	private final AnnouncementViewRepository viewRepo;
+	private final ActivityLogService activityLogService;
 
 	private final String uploadDir = System.getProperty("user.dir") + "/uploads/announcements/";
 
-	public AnnouncementService(AnnouncementRepository announcementRepo, UserRepository userRepo,
-			AnnouncementLikeRepository likeRepo, AnnouncementViewRepository viewRepo) {
-		this.announcementRepo = announcementRepo;
-		this.userRepo = userRepo;
-		this.likeRepo = likeRepo;
-		this.viewRepo = viewRepo;
+	public AnnouncementService(
+	        AnnouncementRepository announcementRepo,
+	        UserRepository userRepo,
+	        AnnouncementLikeRepository likeRepo,
+	        AnnouncementViewRepository viewRepo,
+	        ActivityLogService activityLogService
+	) {
 
-		// Tạo thư mục nếu chưa có
-		File dir = new File(uploadDir);
-		if (!dir.exists())
-			dir.mkdirs();
+	    this.announcementRepo = announcementRepo;
+
+	    this.userRepo = userRepo;
+
+	    this.likeRepo = likeRepo;
+
+	    this.viewRepo = viewRepo;
+
+	    this.activityLogService = activityLogService;
+
+	    File dir = new File(uploadDir);
+
+	    if (!dir.exists()) {
+	        dir.mkdirs();
+	    }
 	}
 
 	// CREATE ANNOUNCEMENT + MULTIPLE ATTACHMENTS
@@ -84,7 +101,16 @@ public class AnnouncementService {
 		}
 		a.setStatus(status);
 
-		return announcementRepo.save(a);
+		Announcement saved = announcementRepo.save(a);
+
+		logAnnouncement(
+		        admin,
+		        ActivityActionType.CREATE,
+		        saved,
+		        " đã tạo thông báo: " + saved.getTitle()
+		);
+
+		return saved;
 	}
 
 	// UPDATE ANNOUNCEMENT + MULTIPLE ATTACHMENTS
@@ -144,7 +170,16 @@ public class AnnouncementService {
 			a.setAttachments(updatedAttachments);
 		}
 
-		return announcementRepo.save(a);
+		Announcement updated = announcementRepo.save(a);
+
+		logAnnouncement(
+		        a.getAdmin(),
+		        ActivityActionType.UPDATE,
+		        updated,
+		        " đã cập nhật thông báo: " + updated.getTitle()
+		);
+
+		return updated;
 	}
 
 	private String saveFile(MultipartFile file) throws IOException {
@@ -196,6 +231,12 @@ public class AnnouncementService {
 			}
 		}
 
+		logAnnouncement(
+		        a.getAdmin(),
+		        ActivityActionType.DELETE,
+		        a,
+		        " đã xóa thông báo: " + a.getTitle()
+		);
 		announcementRepo.deleteById(id);
 	}
 
@@ -203,5 +244,33 @@ public class AnnouncementService {
 		return announcementRepo.findAll();
 	}
 	
+	private void logAnnouncement(
+	        User user,
+	        ActivityActionType actionType,
+	        Announcement announcement,
+	        String description
+	) {
+
+	    String meta = """
+	            {
+	                "title": "%s",
+	                "status": "%s",
+	                "pinned": %s
+	            }
+	            """.formatted(
+	            announcement.getTitle(),
+	            announcement.getStatus(),
+	            announcement.getPinned()
+	    );
+
+	    activityLogService.log(
+	            user,
+	            actionType,
+	            ActivityTargetType.ANNOUNCEMENT,
+	            announcement.getId(),
+	            description,
+	            meta
+	    );
+	}
 }
 
