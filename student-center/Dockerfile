@@ -4,12 +4,14 @@ FROM maven:3.9.9-eclipse-temurin-17-alpine AS build
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# Copy file pom.xml để cache dependencies
-COPY pom.xml .
+# Copy file pom.xml từ thư mục student-center
+COPY student-center/pom.xml .
+
+# Download dependencies
 RUN mvn dependency:go-offline
 
-# Copy toàn bộ source code
-COPY src ./src
+# Copy toàn bộ source code từ thư mục student-center
+COPY student-center/src ./src
 
 # Build ứng dụng (bỏ qua test để nhanh)
 RUN mvn clean package -DskipTests
