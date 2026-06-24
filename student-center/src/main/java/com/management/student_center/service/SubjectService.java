@@ -209,19 +209,6 @@ public class SubjectService {
 		String subjectName = subject.getName();
 		String subjectGrade = subject.getGrade();
 
-		// 1Kiểm tra nợ lương giáo viên
-		long unpaidTeacherSalary = teacherPaymentDetailRepository.countUnpaidBySubject(id);
-
-		if (unpaidTeacherSalary > 0) {
-			throw new IllegalStateException("TEACHER_UNPAID");
-		}
-
-		// 2Kiểm tra học phí học sinh
-		long unpaidStudentTuition = studentTuitionDetailRepository.countUnpaidBySubject(id);
-
-		if (unpaidStudentTuition > 0) {
-			throw new IllegalStateException("STUDENT_UNPAID");
-		}
 
 		// 3Xóa các quan hệ trung gian
 		teacherSubjectRepository.deleteBySubjectId(id);
@@ -274,12 +261,7 @@ public class SubjectService {
 		Long currentTeacherId = existingTS != null ? existingTS.getTeacher().getId() : null;
 		boolean isChangingTeacher = !Objects.equals(currentTeacherId, newTeacherId);
 
-		if (isChangingTeacher && existingTS != null) {
-			long unpaidSalary = teacherPaymentDetailRepository.countUnpaidBySubject(id);
-			if (unpaidSalary > 0) {
-				throw new IllegalStateException("TEACHER_UNPAID_CHANGE");
-			}
-		}
+		
 
 		// 2. Cập nhật thông tin môn học
 		subject.setName(updatedData.getName());
